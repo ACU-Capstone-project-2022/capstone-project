@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes","u":"allclasses-index.html"},{"p":"com.beanlib","l":"DataImport"},{"p":"com.beanlib","l":"DBResult"},{"p":"com.beanlib","l":"PRoAUtil"}];updateSearchResults();
