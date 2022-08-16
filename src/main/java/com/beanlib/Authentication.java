@@ -109,9 +109,83 @@ public class Authentication {
 	 */
 	public int registerLogin() {
 		int regcode = -1; //-1: error, 0: email exists, 1: successful
-		// create database and tables
-		Connection conn = InitDB();
+
+		// ************************************************** //
+		//System.out.println("Check if user exists");
+		// Bugs: Longer then 1 word user names, malicious strings,special characters
+		try {
+			// create database and tables
+			Connection conn = InitDB();
+			// prepare a SQl statement
+			PreparedStatement ps1=conn.prepareStatement("Select * from proadb.login where email = ?"); 
+			ps1.setString(1, email);
+
+			// execute sql query		
 			
+			ResultSet rs = ps1.executeQuery();
+			System.out.println(rs);		
+			System.out.println(ps1);
+			
+			
+			if (rs.next()) {
+				regcode = 0;
+			} else {
+				regcode = 1;	
+			} 
+			
+			// statement and connection
+			ps1.close();
+			
+			try {
+				
+				//check if user Exists or Not. Check if regcode = 0
+				System.out.println("Check regcode");
+				System.out.println(regcode);
+				if (regcode == 1){
+						
+					// prepare a SQl statement
+					//PreparedStatement ps=conn.prepareStatement("INSERT INTO proadb.login (firstname, lastname, discipline, email, password ) VALUES ('harry', 'shaw', 'Test', 'harry@gmail.com', 'harry123');");
+					PreparedStatement pst=conn.prepareStatement("INSERT INTO proadb.login (firstname, lastname, discipline, email, password ) VALUES ( ?, ?, ?, ?, ?);");
+					
+					pst.setString(1, firstname);
+					pst.setString(2, lastname);
+					pst.setString(3, discipline);
+					pst.setString(4, email);
+					
+					String hashedpw = BCrypt.hashpw(password, BCrypt.gensalt(12));
+					pst.setString(5, hashedpw);
+		
+					
+					// execute sql query
+					pst.execute();
+		
+					// statement and connection
+					pst.close();
+					conn.close();
+				} else {
+					regcode = -1;
+					System.out.println("User Already Exists");
+				}
+
+			} catch(Exception e) {
+				//Handle errors for Class.forName
+				e.printStackTrace();
+				regcode = -1;
+			}
+			
+			
+			
+			conn.close();
+
+		} catch(Exception e) {
+			//Handle errors for Class.forName
+			e.printStackTrace();
+			regcode = -1;
+		}
+		
+		// ************************************************** //
+		//System.out.println("Create User");
+		
 		return regcode;
 		
 	}
@@ -228,6 +302,24 @@ public class Authentication {
 	 * 3. if (acticode != null), set activated =1 using update statement
 	 */
 	public String updateLogin(String acticode, String email) {
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver");
+			Connection conn = DriverManager.getConnection(Configuration.dbConnectionURL);
+
+			if (acticode == null) {
+				acticode = RandomStringUtils.randomAlphabetic(10);
+			} else {
+				PreparedStatement ps = conn.prepareStatement("UPDATE proadb.login SET activated = 1 WHERE email = ?");
+				ps.setString(1, email);
+				ps.execute();
+			}
+			PreparedStatement ps = conn.prepareStatement("UPDATE proadb.login SET acticode = ? WHERE email = ?");
+			ps.setString(1, acticode);
+			ps.setString(2, email);
+			return acticode;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return acticode;
 	}
 	

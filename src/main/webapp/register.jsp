@@ -2,6 +2,7 @@
 <%@ page import="java.util.*, com.beanlib.Authentication" %> 
 <%@ page errorPage="error.jsp" %>
 <jsp:useBean id="login" class="com.beanlib.Authentication"></jsp:useBean>
+<jsp:useBean id="conf" class="com.beanlib.Configuration"></jsp:useBean>
 <jsp:useBean id="util" class="com.beanlib.PRoAUtil"></jsp:useBean>
 
 <!DOCTYPE html>
@@ -112,8 +113,8 @@
 			String lastname = request.getParameter("lastname");
 			String discipline = request.getParameter("discipline");
 			String email = request.getParameter("email");
-			String appremail = request.getParameter("appremail");
-			String[] approver = {appremail};
+			String approvEmail = conf.getApprovEmail();
+			String[] approver = {approvEmail};
 			
 			// Extract the URL of the request
 			String linkbase = request.getRequestURL().toString();
