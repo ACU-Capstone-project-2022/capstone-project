@@ -145,12 +145,13 @@ public class Authentication {
 						
 					// prepare a SQl statement
 					//PreparedStatement ps=conn.prepareStatement("INSERT INTO proadb.login (firstname, lastname, discipline, email, password ) VALUES ('harry', 'shaw', 'Test', 'harry@gmail.com', 'harry123');");
-					PreparedStatement pst=conn.prepareStatement("INSERT INTO proadb.login (firstname, lastname, discipline, email, password ) VALUES ( ?, ?, ?, ?, ?);");
+					PreparedStatement pst=conn.prepareStatement("INSERT INTO proadb.login (firstname, lastname, discipline, email, password, roles) VALUES ( ?, ?, ?, ?, ?, ?);");
 					
 					pst.setString(1, firstname);
 					pst.setString(2, lastname);
 					pst.setString(3, discipline);
 					pst.setString(4, email);
+					pst.setString(6, roles);
 					
 					String hashedpw = BCrypt.hashpw(password, BCrypt.gensalt(12));
 					pst.setString(5, hashedpw);
