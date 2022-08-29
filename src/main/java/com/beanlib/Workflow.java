@@ -12,12 +12,30 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.Properties;
+
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.mindrot.jbcrypt.BCrypt;
 
 //the class for handling all workflow activities
 public class Workflow {
@@ -47,11 +65,43 @@ public class Workflow {
 	 *   5. Convert the HashSet into an array and return it.
 	 * 
 	 */
+	
+	private Boolean isRowInArray(String[] array, int rowIndex) {
+		for (int i = 0; i < array.length; i++) {
+			if (Integer.parseInt(array[i]) == rowIndex)
+					return true;
+		}
+		return false;
+	}
+	
 	public String[] setReviewedUnits(String[] offered, String[] reviewed) {
 		// using HashSet to store unique discipline head email 
 		// addresses (potentially more than one person)
-		Set<String> dhs = new HashSet<String>(); 
-		
+		Set<String> dhs = new HashSet<String>();
+		Connection conn;
+		try {
+			conn = DriverManager.getConnection(Configuration.dbConnectionURL);
+			PreparedStatement ps = conn.prepareStatement("SELECT * FROM units ORDER BY discipline ASC, code ASC", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); 
+			ResultSet rs = ps.executeQuery();
+
+			int rowIndex = 0;
+
+			while (rs.next()) {
+				if (isRowInArray(offered, rowIndex)) {
+					rs.updateInt("2boffered", 1);
+			        rs.updateRow();
+				}
+				if (isRowInArray(reviewed, rowIndex)) {
+					rs.updateInt("2breviewed", 1);
+			        rs.updateRow();
+				}
+				rowIndex++;
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block 
+			e.printStackTrace();
+		}
+
 		// convert HashSet to an array
 		String[] simpleArray = new String[dhs.size()];
 		dhs.toArray(simpleArray);
