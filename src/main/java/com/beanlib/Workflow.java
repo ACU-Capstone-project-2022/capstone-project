@@ -89,10 +89,15 @@ public class Workflow {
 			while (rs.next()) {
 				if (isRowInArray(offered, rowIndex)) {
 					rs.updateInt("2boffered", 1);
-			        rs.updateRow();
-				}
-				if (isRowInArray(reviewed, rowIndex)) {
-					rs.updateInt("2breviewed", 1);
+			        if (isRowInArray(reviewed, rowIndex)) {
+						rs.updateInt("2breviewed", 1);
+						String sqlQuery = "SELECT * FROM login WHERE discipline='" + rs.getString("discipline") + "' AND roles LIKE '%dh%'";
+						String[] emailAdresses = getEmailAddresses(sqlQuery, "");
+						for (int i = 0; i < emailAdresses.length; i++) {
+							System.out.println(emailAdresses[i]);
+							dhs.add(emailAdresses[i]);
+						}
+					}
 			        rs.updateRow();
 				}
 				rowIndex++;
