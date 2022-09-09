@@ -34,6 +34,8 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+import org.apache.commons.io.FilenameUtils;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -304,13 +306,49 @@ public class Workflow {
 	 * 			expected reviewers have uploaded their reviewed assessments, the status is changed to "reviewed".
 	 * 		  for (2), use the "states" variable to record relevant statuses and then use string searching to determine the correct "uploadState"
 	 */
+	
+	//-1: upload unsuccessful, 0: only uploaded by nlic, 1: only revised by nlic, 
+	//2: mix of uploaded and revised by nlic, 3: reviewed by pr
+	// If it contains "reviewed" (reviewed by all reviewers) or "reviewer" (not reviewed by all reviewers),
+	// uploadState should return 3. If it contains both "uploaded" and "revised", it should return 2.
+	// If it contains "revised", it should return 1. If it contains "uploaded", it should return 0.
 	public int uploadAssessments(HttpServletRequest request, String sqlquery) {				
-		int uploadState = -1;  //-1: upload unsuccessful, 0: only uploaded by nlic, 1: only revised by nlic, 
-		 					   //2: mix of uploaded and revised by nlic, 3: reviewed by pr
-		String states = "";    // If it contains "reviewed" (reviewed by all reviewers) or "reviewer" (not reviewed by all reviewers),
-							   // uploadState should return 3. If it contains both "uploaded" and "revised", it should return 2.
-							   // If it contains "revised", it should return 1. If it contains "uploaded", it should return 0.
+		int uploadState = -1;
+
+		String states = "";  
 		
+		Connection conn;
+		try {
+			conn = DriverManager.getConnection(Configuration.dbConnectionURL);
+			PreparedStatement ps = conn.prepareStatement(sqlquery, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); 
+			ResultSet rs = ps.executeQuery();
+			
+			System.out.println(request);
+			for (int row = 0; rs.next(); row++) {
+				String[] at_no = {Integer.toString(row) + "_1", Integer.toString(row) + "_2", Integer.toString(row) + "_3"};
+				
+				for (int i = 0; i < 3; i++) {					
+					javax.servlet.http.Part file = request.getPart(at_no[i]);
+					String filename = this.getFileName(file);
+
+					if (filename.length() > 0) {
+						InputStream inputstream = file.getInputStream();
+						String fileExtension = FilenameUtils.getExtension(filename);
+						System.out.println("filename: ["+ filename + "]");
+						
+						if (inputstream.available() > 0 && rs.getString("at" + Integer.toString(i + 1) + "_status") != "null") {
+							// set assessment status
+							// store file in db
+						}
+					} else {
+						System.out.println("file null");
+					}
+				}
+			}
+			
+		} catch (Exception e) {
+			
+		}
 		return uploadState;
 		
 	}
