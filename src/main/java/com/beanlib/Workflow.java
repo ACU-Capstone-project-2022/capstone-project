@@ -16,6 +16,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -314,8 +316,6 @@ public class Workflow {
 	// If it contains "revised", it should return 1. If it contains "uploaded", it should return 0.
 	public int uploadAssessments(HttpServletRequest request, String sqlquery) {				
 		int uploadState = -1;
-
-		String states = "";  
 		
 		Connection conn;
 		try {
@@ -333,21 +333,38 @@ public class Workflow {
 
 					if (filename.length() > 0) {
 						InputStream inputstream = file.getInputStream();
-						String fileExtension = FilenameUtils.getExtension(filename);
 						System.out.println("filename: ["+ filename + "]");
 						
 						if (inputstream.available() > 0 && rs.getString("at" + Integer.toString(i + 1) + "_status") != "null") {
+							
+							// set assessment file type
+							String filetype = FilenameUtils.getExtension(filename);
+							System.out.println("filetype: ["+ filetype + "]");
+							rs.updateString(at_type[i], filetype);
+							
 							// set assessment status
+							String status= request.getParameter(at_no[i]);
+							System.out.println("status: ["+ status + "]");
+							rs.updateString(at_status[i], status);
+							
 							// store file in db
+							InputStream fileData=inputstream;
+							System.out.println("fileData: ["+ fileData + "]");
+							rs.updateBlob(at_label[i], fileData);
+							rs.updateRow();
+							
 						}
+						
+						
 					} else {
 						System.out.println("file null");
 					}
 				}
+				uploadState =  0;
 			}
 			
 		} catch (Exception e) {
-			
+			uploadState =  -1;
 		}
 		return uploadState;
 		
