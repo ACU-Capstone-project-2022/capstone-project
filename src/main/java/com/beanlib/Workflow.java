@@ -16,6 +16,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -317,6 +319,7 @@ public class Workflow {
 		int uploadState = -1;
 		String states = "";
 
+		
 		Connection conn;
 		try {
 			conn = DriverManager.getConnection(Configuration.dbConnectionURL);
@@ -377,6 +380,7 @@ public class Workflow {
 						System.out.println("file null");
 					}
 				}
+				uploadState =  0;
 			}
 			uploadState =  0;
 		} catch (Exception e) {
