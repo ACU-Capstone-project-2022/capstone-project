@@ -49,7 +49,8 @@ public class Workflow {
  	final String[] reviewer1_at = {"reviewer1_at1", "reviewer1_at2", "reviewer1_at3"};
 	final String[] reviewer2_at = {"reviewer2_at1", "reviewer2_at2", "reviewer2_at3"};
 	final String[] reviewer3_at = {"reviewer3_at1", "reviewer3_at2", "reviewer3_at3"};		
-	
+	final String[] reviewer_x = {"reviewer1", "reviewer2", "reviewer3"};
+
 	/* set the offered units to be reviewed in the database and 
 	 * return discipline head email addresses so that they will be informed to allocate stakeholders
 	 * Sprint 2 is to complete this method 
@@ -314,9 +315,8 @@ public class Workflow {
 	// If it contains "revised", it should return 1. If it contains "uploaded", it should return 0.
 	public int uploadAssessments(HttpServletRequest request, String sqlquery) {				
 		int uploadState = -1;
+		String states = "";
 
-		String states = "";  
-		
 		Connection conn;
 		try {
 			conn = DriverManager.getConnection(Configuration.dbConnectionURL);
@@ -327,30 +327,107 @@ public class Workflow {
 			for (int row = 0; rs.next(); row++) {
 				String[] at_no = {Integer.toString(row) + "_1", Integer.toString(row) + "_2", Integer.toString(row) + "_3"};
 				
-				for (int i = 0; i < 3; i++) {					
+				for (int i = 0; i < 3; i++) {
+					if (request.getPart(at_no[i]) == null) {						
+						continue;
+					}
 					javax.servlet.http.Part file = request.getPart(at_no[i]);
 					String filename = this.getFileName(file);
 
 					if (filename.length() > 0) {
 						InputStream inputstream = file.getInputStream();
-						String fileExtension = FilenameUtils.getExtension(filename);
 						System.out.println("filename: ["+ filename + "]");
 						
 						if (inputstream.available() > 0 && rs.getString("at" + Integer.toString(i + 1) + "_status") != "null") {
-							// set assessment status
+							
+							// set assessment file type
+							String filetype = FilenameUtils.getExtension(filename);
+							System.out.println("filetype: ["+ filetype + "]");
+							rs.updateString(at_type[i], filetype);
+							
+							
+							
+							// set assessment status							
+							String status= request.getParameter(at_no[i]);
+							if (isReviewedByAllReviewers(rs, i, status) && !status.equals("revised")) {
+								status = "reviewed";
+							}
+							states = status;
+							System.out.println("status: ["+ status + "]");
+							rs.updateString(at_status[i], status);
+							
 							// store file in db
-						}
+							InputStream fileData=inputstream;
+							System.out.println("fileData: ["+ fileData + "]");
+							
+							if (request.getParameter(at_no[i]).equals("uploaded") || request.getParameter(at_no[i]).equals("revised")) {
+								System.out.println("Uploaded by nlic");
+								rs.updateBlob(at_label[i], fileData);
+							} else {
+								String col_name = getReviewerAt(request.getParameter(at_no[i]), i);
+								rs.updateBlob(col_name, fileData);
+								System.out.println("Uploaded by PR");
+							}
+							
+							
+							
+							rs.updateRow();							
+						}						
 					} else {
 						System.out.println("file null");
 					}
 				}
 			}
-			
+			uploadState =  0;
 		} catch (Exception e) {
-			
+			System.out.println(e);
+			uploadState =  -1;
 		}
+		if (states.equals("reviewed") || states.contains("reviewer")) {
+			uploadState = 3;
+		}
+		if (states.contains("uploaded") && states.contains("revised")) {
+			uploadState = 2;
+		}
+		if (states.equals("revised")) {
+			uploadState = 1;
+		}
+		if (states.equals("uploaded")) {
+			uploadState = 0;
+		}
+		System.out.println("uploadState = " + uploadState);
 		return uploadState;
 		
+	}
+	
+	private Boolean isReviewedByAllReviewers(ResultSet rs, int i, String status) {
+		try {			
+			for (int r = 0; r < 3; r++) {
+				System.out.println("Here");
+				if (rs.getString(reviewer_x[r]) != null && rs.getBlob(getReviewerAt(reviewer_x[r], i)) == null && !status.equals(reviewer_x[r])) {
+					System.out.println(reviewer_x[r]);
+					System.out.println(status);
+					System.out.println("returning false");
+					return false;
+				}
+			}
+			return true;
+		} catch (Exception e) {
+			System.out.println(e);
+			return false;
+		}
+	}
+
+	private String getReviewerAt(String status, int i) {
+		switch(status) {
+		case "reviewer1":
+			return reviewer1_at[i];
+		case "reviewer2":
+			return reviewer2_at[i];
+		case "reviewer3":
+			return reviewer3_at[i];
+		}
+		return "";
 	}
 	// download assessments from database to the web server and make it accessible via urls
 	/* Sprint 5 is to complete this method
