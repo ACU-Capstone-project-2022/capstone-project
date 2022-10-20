@@ -443,8 +443,41 @@ public class Workflow {
 	 * 		- download all reviewed assessments using the same method
 	 */
 	public void downloadAssessment(HttpServletRequest request, String sqlquery) {
+        Connection conn;
+        try {
+            conn = DriverManager.getConnection(Configuration.dbConnectionURL);
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM units ORDER BY discipline ASC, code ASC", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); 
+            ResultSet rs = ps.executeQuery();
 
-	}
+            System.out.println(sqlquery);
+
+            for (int row = 0; rs.next(); row++) {
+                String code = rs.getString("code");
+
+                for (int i = 0; i < 3; i++) {
+                	Blob label = rs.getBlob(at_label[i]);
+                	if (label == null) {                		
+                		continue;
+                	}
+                    String attype = rs.getString(at_type[i]);
+                    String FileName = code + "_" + at_label[i] + attype;
+                    System.out.println(FileName);
+                    try {
+                        downloadToFile(request, FileName, label);
+                    } catch (Exception e) { 
+                        e.printStackTrace();
+                    }
+
+                }
+
+            }
+
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block 
+            e.printStackTrace();
+        }
+
+    }
 	
 	// save blob (b) from database to a file (filename)
 	private void downloadToFile(HttpServletRequest request, String filename, Blob b)
